@@ -1,5 +1,5 @@
 import re
-import csv
+import json
 import pandas as pd
 
 root_category_re = re.compile(r"\[\"(.*?)[(?:\s+(?:>>)*)|(?:\")]")
@@ -10,8 +10,20 @@ def parse_root_category(category_tree: str) -> str:
     return re_match.group(1)
 
 
+def parse_image_list(image_list: str) -> list | None:
+    try:
+        return json.loads(image_list)
+    except json.decoder.JSONDecodeError:
+        return []
+
+
 df = pd.read_csv(
     "flipkart_dataset.csv",
+    converters={
+        "product_category_tree": parse_root_category,
+        "image": parse_image_list,
+    },
+    index_col=None,
     usecols=[
         "product_name",
         "product_category_tree",
@@ -23,8 +35,5 @@ df = pd.read_csv(
     ],
 )
 
-product_category = df.loc[:, "product_category_tree"]
-product_root_category = product_category.map(parse_root_category)
-column_to_insert = 1 + df.columns.get_loc("product_category_tree")
-df.insert(column_to_insert, "product_root_category", product_root_category)
-df.to_csv("filtered_flipkart_dataset.csv", index=False, quoting=csv.QUOTE_ALL)
+df.rename(columns={"product_category_tree": "category"}, inplace=True)
+df.to_json("filtered_flipkart_dataset.json", orient="records")
