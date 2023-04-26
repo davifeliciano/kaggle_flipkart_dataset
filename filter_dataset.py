@@ -17,11 +17,23 @@ def parse_image_list(image_list: str) -> list | None:
         return []
 
 
+def indian_rupees_to_dollars(amount_in_rupees: str) -> float:
+    dollars_in_indian_rupee = 0.012
+
+    try:
+        amount_in_dollars = float(amount_in_rupees) * dollars_in_indian_rupee
+        return {"$numberDecimal": f"{amount_in_dollars:.2f}"}
+    except ValueError:
+        return {"$numberDecimal": "0.00"}
+
+
 df = pd.read_csv(
     "flipkart_dataset.csv",
     converters={
         "product_category_tree": parse_root_category,
         "image": parse_image_list,
+        "retail_price": indian_rupees_to_dollars,
+        "discounted_price": indian_rupees_to_dollars,
     },
     index_col=None,
     usecols=[
